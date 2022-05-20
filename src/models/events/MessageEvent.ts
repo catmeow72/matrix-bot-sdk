@@ -235,6 +235,11 @@ export interface TextualMessageEventContent extends MessageEventContent {
     formatted_body?: string;
 }
 
+export interface MessageEventRelation {
+    rel_type: string,
+    event_id: string,
+}
+
 /**
  * The content definition for m.room.message events
  * @category Matrix event contents
@@ -244,6 +249,8 @@ export interface MessageEventContent {
     body: string;
     msgtype: MessageType;
     external_url?: string;
+    "m.relates_to"?: MessageEventRelation,
+    "m.new_content"?: MessageEventContent,
 }
 
 /**
@@ -288,5 +295,19 @@ export class MessageEvent<T extends MessageEventContent> extends RoomEvent<T> {
      */
     public get externalUrl(): string | undefined {
         return this.content.external_url || undefined;
+    }
+
+    /**
+     * Whether or not the event is an edit of another message
+     */
+    public get isEdit(): boolean {
+        return this.content["m.new_content"] !== undefined && this.content["m.relates_to"]?.rel_type === "m.replace";
+    }
+
+    /**
+     * The event the message relates to, if there is one
+     */
+    public get getRelatedEvent(): string | undefined {
+        return this.content["m.relates_to"]?.event_id;
     }
 }

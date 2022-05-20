@@ -1197,7 +1197,7 @@ export class MatrixClient extends EventEmitter {
             msgtype: "m.text",
         });
     }
-
+ 
     /**
      * Sends a text message to the given room with HTML content. The message will be encrypted if the client supports
      * encryption and the room is encrypted.
@@ -1214,7 +1214,7 @@ export class MatrixClient extends EventEmitter {
             formatted_body: html,
         });
     }
-
+  
     /**
      * Sends a message to the given room. The message will be encrypted if the client supports
      * encryption and the room is encrypted.
@@ -1225,6 +1225,59 @@ export class MatrixClient extends EventEmitter {
     @timedMatrixClientFunctionCall()
     public sendMessage(roomId: string, content: any): Promise<string> {
         return this.sendEvent(roomId, "m.room.message", content);
+    }
+
+    /**
+     * Edits a text message sent by the current user in the given room. The message will be encrypted if the client supports
+     * encryption and the room is encrypted.
+     * @param {string} roomId the room ID to send the text to
+     * @param {string} text the text to send
+     * @param {string} eventId the event to edit
+     * @returns {Promise<string>} resolves to the event ID that represents the edited message. Cannot be used to edit again; for that use the original event.
+     */
+    @timedMatrixClientFunctionCall()
+    public editText(roomId: string, text: string, eventId: string): Promise<string> {
+        return this.editMessage(roomId, {
+            body: text,
+            msgtype: "m.text",
+        }, eventId);
+    }
+
+    /**
+     * Edits a text message sent by the current user in the given room with HTML content. The message will be encrypted if the client supports
+     * encryption and the room is encrypted.
+     * @param {string} roomId the room ID to send the text to
+     * @param {string} html the HTML to send
+     * @param {string} eventId the event to edit
+     * @returns {Promise<string>} resolves to the event ID that represents the edited message. Cannot be used to edit again; for that use the original event.
+     */
+    @timedMatrixClientFunctionCall()
+    public editHtmlText(roomId: string, html: string, eventId: string): Promise<string> {
+        return this.editMessage(roomId, {
+            body: htmlToText(html, {wordwrap: false}),
+            msgtype: "m.text",
+            format: "org.matrix.custom.html",
+            formatted_body: html,
+        }, eventId);
+    }
+    /**
+     * Edits a message sent by the current user in the given room. The message will be encrypted if the client supports
+     * encryption and the room is encrypted.
+     * @param {string} roomId the room ID to send the message to
+     * @param {object} content the event content to send
+     * @returns {Promise<string>} resolves to the event ID that represents the edited message. Cannot be used to edit again; for that use the original event.
+     */
+    @timedMatrixClientFunctionCall()
+    public editMessage(roomId: string, content: any, eventId: string): Promise<string> {
+        var contentRoot: any = Object.assign({}, content);
+        Object.assign(contentRoot, {
+            "m.new_content": content,
+            "m.relates_to": {
+                rel_type: "m.replace",
+                event_id: eventId,
+            }
+        });
+        return this.sendMessage(roomId, contentRoot);
     }
 
     /**
